@@ -1,5 +1,5 @@
-require "digest"
 require "sidekiq-middleware/version"
-require "sidekiq-middleware/server/unique_jobs"
-require "sidekiq-middleware/client/unique_jobs"
 require "sidekiq-middleware/middleware"
+
+Dir[File.dirname(__FILE__) + "/sidekiq-middleware/server/*.rb"].each { |file| require(file) }
+Dir[File.dirname(__FILE__) + "/sidekiq-middleware/client/*.rb"].each { |file| require(file) }
