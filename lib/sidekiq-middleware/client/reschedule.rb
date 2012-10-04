@@ -18,16 +18,16 @@ module Sidekiq
             payload = item.clone
             payload_hash = Sidekiq.hash_for_job(payload)
 
-            # TODO Make this uniqe using multi/watch
             Sidekiq.redis do |conn|
-              # Job has been scheduled - remove old one
-              if original_job_item = conn.get(payload_hash)
-                conn.zrem("schedule", original_job_item)
-              end
+              conn.watch(payload_hash)
+              original_job_item = conn.get(payload_hash)
 
-              # Set the timestamp for this job so we can look it up again when
-              # we want to reschedule the job.
-              conn.setex(payload_hash, item["at"].to_i - Time.now.to_i, Sidekiq.dump_json(item))
+              conn.multi do
+                conn.zrem("schedule", original_job_item) if original_job_item
+
+                # Store the job in redis for easy lookup
+                conn.setex(payload_hash, item["at"].to_i - Time.now.to_i, Sidekiq.dump_json(item))
+              end
             end
           end
 
