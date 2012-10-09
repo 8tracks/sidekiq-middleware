@@ -7,14 +7,14 @@ module Sidekiq
           Sidekiq::Logging.with_context("#{args[0].class.to_s} MSG-#{args[0].object_id.to_s(36)}") do
             begin
               start = Time.now
-              STATSD.timing("timer.queue.#{args[0].class.to_s.underscore}", elapsed_ms(Time.at(args[1]['queued_at'])))
+              STATSD.timing("queue.#{args[0].class.to_s.underscore}", elapsed_ms(Time.at(args[1]['queued_at'])))
               yield
-              STATSD.increment("timer.job.#{args[0].class.to_s.underscore}.success")
+              STATSD.increment("job.#{args[0].class.to_s.underscore}.success")
             rescue Exception
-              STATSD.increment("timer.job.#{args[0].class.to_s.underscore}.error")
+              STATSD.increment("job.#{args[0].class.to_s.underscore}.error")
               raise
             ensure
-              STATSD.timing("timer.job.#{args[0].class.to_s.underscore}", elapsed_ms(start))
+              STATSD.timing("job.#{args[0].class.to_s.underscore}", elapsed_ms(start))
             end
           end
         end
