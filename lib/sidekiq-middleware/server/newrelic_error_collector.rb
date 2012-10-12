@@ -7,7 +7,6 @@ module Sidekiq
           begin
             yield
           rescue Exception => e
-            debugger
             NewRelic::Agent.notice_error(e)
             raise e
           end
