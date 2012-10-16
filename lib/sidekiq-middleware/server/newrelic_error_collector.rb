@@ -7,7 +7,16 @@ module Sidekiq
           begin
             yield
           rescue Exception => e
-            NewRelic::Agent.notice_error(e)
+            options = { 
+              :request => nil,
+              :uri => "Sidekiq/#{args.first.class.to_s}",
+              :referer => nil,
+              :metric => "metric: [Sidekiq] #{args.first.class.to_s}",
+              :request_params => args[1]['args'],
+              :custom_params => nil
+            }
+
+            NewRelic::Agent.notice_error(e, options)
             raise e
           end
         end
