@@ -10,9 +10,9 @@ module Sidekiq
               STATSD.timing("queue.#{args[0].class.to_s.underscore}", elapsed_ms(Time.at(args[1]['queued_at'])))
               yield
               STATSD.increment("job.#{args[0].class.to_s.underscore}.success")
-            rescue Exception => e
+            rescue Exception
               STATSD.increment("job.#{args[0].class.to_s.underscore}.error")
-              raise e.message + "\n\n" + e.backtrace.join("\n")
+              raise
             ensure
               STATSD.timing("job.#{args[0].class.to_s.underscore}", elapsed_ms(start))
             end
