@@ -9,9 +9,9 @@ module Sidekiq
           rescue Exception => e
             options = { 
               :request => nil,
-              :uri => "Sidekiq/#{args.first.class.to_s}",
+              :uri => nil,
               :referer => nil,
-              :metric => "metric: [Sidekiq] #{args.first.class.to_s}",
+              :metric => "Sidekiq/#{args.first.class.to_s}",
               :request_params => args[1]['args'],
               :custom_params => nil
             }

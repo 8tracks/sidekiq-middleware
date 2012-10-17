@@ -5,16 +5,21 @@ module Sidekiq
 
         def call(*args)
           Sidekiq::Logging.with_context("#{args[0].class.to_s} MSG-#{args[0].object_id.to_s(36)}") do
+            job_name = args[0].class.to_s.underscore
+            queue_name = args[1]['queue']
+            delay_ms = elapsed_ms(Time.at(args[1]['queued_at']))
+
             begin
+              STATSD.timer("job.delay.#{job_name}", delay_ms)
+              STATSD.timer("queue.delay.#{queue_name}", delay_ms)
               start = Time.now
-              STATSD.timing("queue.#{args[0].class.to_s.underscore}", elapsed_ms(Time.at(args[1]['queued_at'])))
               yield
-              STATSD.increment("job.#{args[0].class.to_s.underscore}.success")
+              STATSD.counter("job.#{job_name}.success")
             rescue Exception
-              STATSD.increment("job.#{args[0].class.to_s.underscore}.error")
+              STATSD.counter("job.#{job_name}.error")
               raise
             ensure
-              STATSD.timing("job.#{args[0].class.to_s.underscore}", elapsed_ms(start))
+              STATSD.timer("job.#{job_name}", elapsed_ms(start))
             end
           end
         end
