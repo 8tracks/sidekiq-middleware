@@ -8,7 +8,7 @@ module Sidekiq
             job_name = args[0].class.to_s.underscore
             queue_name = args[1]['queue']
             delay_ms = elapsed_ms(Time.at(args[1]['queued_at']))
-            prefix = worker_instance.class.get_sidekiq_options['prefix']
+            prefix = args[0].class.get_sidekiq_options['prefix']
 
             begin
               STATSD.timer("#{prefix}job.delay.#{job_name}", delay_ms)
