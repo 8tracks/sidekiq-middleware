@@ -8,12 +8,14 @@ module Sidekiq
         def call(worker_class, item, queue)
           yield
 
-          # Ensure job hash key is removed. Even though we set a TTL on this
-          # key on the client side, this ensures it's removed if something
-          # goes wrong.
-          payload_hash = Sidekiq.hash_for_job(item)
-          Sidekiq.redis do |conn|
-            conn.del(payload_hash)
+          if worker_class.get_sidekiq_options['reschedule']
+            # Ensure job hash key is removed. Even though we set a TTL on this
+            # key on the client side, this ensures it's removed if something
+            # goes wrong.
+            payload_hash = Sidekiq.hash_for_job(item)
+            Sidekiq.redis do |conn|
+              conn.del(payload_hash)
+            end
           end
         end # call
       end # Reschedule

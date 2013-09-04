@@ -4,11 +4,11 @@ require "sidekiq-middleware/ext/job_lookup"
 module Sidekiq
   module Middleware
     module Client
+      # Add ability to reschedule an already scheduled job.
       class Reschedule
         def call(worker_class, item, queue)
           # Item is scheduled to run later
-          if item.has_key?("at")
-
+          if worker_class.get_sidekiq_options['reschedule'] && item.has_key?("at")
             # We cannot rely on item['jid'] for the item key in redis since
             # it's randomly generated each time a job is queued. Instead, we'll
             # rely on item['class'] & item['args']. We only rely on these two
