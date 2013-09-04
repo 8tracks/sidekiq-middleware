@@ -5,10 +5,10 @@ module Sidekiq
   module Middleware
     module Server
       class Reschedule
-        def call(worker_class, item, queue)
+        def call(worker_instance, item, queue)
           yield
 
-          if worker_class.get_sidekiq_options['reschedule']
+          if worker_instance.class.get_sidekiq_options['reschedule']
             # Ensure job hash key is removed. Even though we set a TTL on this
             # key on the client side, this ensures it's removed if something
             # goes wrong.
