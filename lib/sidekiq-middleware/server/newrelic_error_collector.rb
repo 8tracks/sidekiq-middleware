@@ -6,8 +6,15 @@ module Sidekiq
         def call(*args)
           begin
             yield
-          rescue Exception => e
-            options = { 
+          rescue ::RateLimiters::RateLimitReached => e
+            # NOTE: This is an 8tracks.com specific error.
+            #
+            # We don't notify RPM with these errors but we still want
+            # to raise so that the job is retried
+            raise e
+
+          rescue StandardError => e
+            options = {
               :request => nil,
               :uri => nil,
               :referer => nil,

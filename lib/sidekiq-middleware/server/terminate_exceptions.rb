@@ -4,7 +4,7 @@ module Sidekiq
       class TerminateExceptions
         def call(*args)
           yield
-        rescue Exception
+        rescue StandardError
           # Do nothing -- our midleware stack handles errors already
         end
       end
