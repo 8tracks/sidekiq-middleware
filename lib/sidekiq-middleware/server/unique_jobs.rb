@@ -12,9 +12,17 @@ module Sidekiq
           # Used for jobs which may scheduling self in future
           clear(worker_instance, item, queue) if forever
 
+          prefix   = args[0].class.get_sidekiq_options['prefix']
+          job_name = args[0].class.to_s.underscore
           begin
+            STATSD.counter("#{prefix}job.#{job_name}.unique_jobs.before")
             yield
+            STATSD.counter("#{prefix}job.#{job_name}.unique_jobs.after")
+          rescue e
+            STATSD.counter("#{prefix}job.#{job_name}.unique_jobs.rescue")
+            raise e
           ensure
+            STATSD.counter("#{prefix}job.#{job_name}.unique_jobs.ensure")
             clear(worker_instance, item, queue) unless forever
           end
         end
@@ -22,7 +30,7 @@ module Sidekiq
         def clear(worker_instance, item, queue)
           enabled = worker_instance.class.get_sidekiq_options['unique']
 
-          # Enabled unique scheduled 
+          # Enabled unique scheduled
           if enabled == :all && item.has_key?('at')
             payload = item.clone
             payload.delete('at')
@@ -32,7 +40,7 @@ module Sidekiq
             payload.delete('jid')
           end
           payload_hash = Digest::MD5.hexdigest(Sidekiq.dump_json(Hash[payload.sort]))
-          
+
           Sidekiq.redis { |conn| conn.del(payload_hash) }
         end
 

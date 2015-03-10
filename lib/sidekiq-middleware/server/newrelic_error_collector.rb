@@ -5,8 +5,13 @@ module Sidekiq
 
         def call(*args)
           begin
+            prefix   = args[0].class.get_sidekiq_options['prefix']
+            job_name = args[0].class.to_s.underscore
+            STATSD.counter("#{prefix}job.#{job_name}.newrelic_error_collector.before")
             yield
+            STATSD.counter("#{prefix}job.#{job_name}.newrelic_error_collector.after")
           rescue ::RateLimiters::RateLimitReached => e
+            STATSD.counter("#{prefix}job.#{job_name}.newrelic_error_collector.rescue_rate_limiter")
             # NOTE: This is an 8tracks.com specific error.
             #
             # We don't notify RPM with these errors but we still want
@@ -14,6 +19,7 @@ module Sidekiq
             raise e
 
           rescue StandardError => e
+            STATSD.counter("#{prefix}job.#{job_name}.newrelic_error_collector.rescue")
             options = {
               :request => nil,
               :uri => nil,
