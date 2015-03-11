@@ -26,14 +26,54 @@ module Sidekiq
             return
 
           else
-            STATSD.counter("#{prefix}job.#{job_name}.job_management.before")
-            yield
-            STATSD.counter("#{prefix}job.#{job_name}.job_management.after")
-
+            if !rate_limited(instance)
+              yield
+            else
+              STATSD.counter("#{prefix}job.#{instance.class.to_s.underscore}.rate_limited")
+              instance.class.perform_in(rand(60*60), *args[1]["args"])
+              return
+            end
           end
         rescue => e
-          STATSD.counter("#{prefix}job.#{job_name}.job_management.rescue")
           raise e
+        end
+
+        def rate_limited(instance)
+          if threshold = instance.class.get_sidekiq_options['rate_limit_threshold']
+            interval = instance.class.get_sidekiq_options['rate_limit_interval'] || 60
+
+            return !within_rate_limit?(instance.class.to_s, threshold.to_i, interval.to_i)
+          else
+            return false
+          end
+        end
+
+        def within_rate_limit?(name, threshold, interval)
+          threshold = threshold
+          interval = interval
+
+          # ie: turns 25 req per 60 seconds into 5 per 12 seconds
+          # if gcd = threshold.gcd(interval) and gcd > 1
+          #   threshold = threshold / gcd
+          #   interval =  interval / gcd
+          # end
+
+          res = nil
+          Sidekiq.redis do |redis|
+            # TODO: switch to CACHE server once converted to 2.6
+            res = redis.eval(%Q{
+              local current
+              current = redis.call('INCR', KEYS[1])
+
+              if tonumber(current) == 1 then
+                redis.call("expire",KEYS[1],tonumber(ARGV[1]))
+              end
+
+              return current
+            }, [ name ], [ interval ])
+          end
+
+          return res <= threshold
         end
 
       end
