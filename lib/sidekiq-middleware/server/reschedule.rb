@@ -10,7 +10,6 @@ module Sidekiq
           prefix   = worker_instance.class.get_sidekiq_options['prefix']
           job_name = worker_instance.class.to_s.underscore
 
-          STATSD.counter("#{prefix}job.#{job_name}.reschedule.before")
           yield
 
           if worker_instance.class.get_sidekiq_options['reschedule']
@@ -23,10 +22,7 @@ module Sidekiq
             end
           end
 
-          STATSD.counter("#{prefix}job.#{job_name}.reschedule.after")
-
         rescue => e
-          STATSD.counter("#{prefix}job.#{job_name}.reschedule.rescue")
           raise e
         end # call
       end # Reschedule

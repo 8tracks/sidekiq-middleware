@@ -15,14 +15,10 @@ module Sidekiq
           prefix   = args[0].class.get_sidekiq_options['prefix']
           job_name = args[0].class.to_s.underscore
           begin
-            STATSD.counter("#{prefix}job.#{job_name}.unique_jobs.before")
             yield
-            STATSD.counter("#{prefix}job.#{job_name}.unique_jobs.after")
           rescue e
-            STATSD.counter("#{prefix}job.#{job_name}.unique_jobs.rescue")
             raise e
           ensure
-            STATSD.counter("#{prefix}job.#{job_name}.unique_jobs.ensure")
             clear(worker_instance, item, queue) unless forever
           end
         end
